@@ -33,13 +33,40 @@
       Rueda izquierda -> Señal a la patilla 10 
 
   - Zumbador:
-      Marrón  -> GND
-      Rojo    -> Señal  -> Patilla 12
-      Naranja -> V+
-
-      https://www.arduino.cc/reference/en/language/functions/advanced-io/tone/
-      Funcionamiento del zumbador usando el siguiente programa: https://github.com/jecrespo/Robot-MiniSumo/blob/master/Firmware%20Arduino/Test_Minisumo/Test_Minisumo.ino
+    Basado en: https://www.arduino.cc/reference/en/language/functions/advanced-io/tone/
+      https://github.com/jecrespo/Robot-MiniSumo/blob/master/Firmware%20Arduino/Test_Minisumo/Test_Minisumo.ino
       
+      Marrón  -> GND
+      Rojo    -> V+
+      Naranja -> Señal  -> Patilla 12
+
+      
+      
+  - Sensores de infrarrojos para detectar bordes oscuros y no salir del tatami. Cuando detectan un color oscuro, el pin de salida se pone a LOW.
+    Basado en información de: https://www.luisllamas.es/arduino-detector-lineas-tcrt5000l/ 
+    
+    - Sensor de infrarrojos trasero
+        Rojo    -> GND
+        Naranja -> V+
+        Amarillo-> Señal  -> Patilla 4
+    
+    - Sensor de infrarrojos derecho
+        Verde    -> GND
+        Azul     -> V+
+        Violeta  -> Señal  -> Patilla 3
+    
+    - Sensor de infrarrojos izquierdo
+        Negro    -> GND
+        Blanco   -> V+
+        Gris     -> Señal  -> Patilla 2
+
+  - Sensor de ultrasonidos
+    Basado en la información de: http://programarfacil.com/blog/arduino-blog/sensor-ultrasonico-arduino-medir-distancia/ 
+
+      Azul    -> GND
+      Gris    -> V+
+      Blanco  -> Echo     -> Patilla 6
+      Negro   -> Trigger  -> Patilla 5
 
 */
 
@@ -71,6 +98,26 @@ unsigned long ahoraMillis                    = 0;    // variable usada para cont
 const unsigned int PIN_ZUMBADOR   = 12;
 const unsigned int DURACION_ESTANDAR_PITIDO = 500;
 
+/**************************************/
+/* SENSORES DE BORDES POR INFRARROJOS */
+/**************************************/
+const unsigned int PIN_IR_TRASERO   = 4;
+const unsigned int PIN_IR_DERECHO   = 3;
+const unsigned int PIN_IR_IZQUIERDO = 2;
+
+bool bordeTraseroDetectado    = false;
+bool bordeDerechoDetectado    = false;
+bool bordeIzquierdoDetectado  = false;
+
+/**************************/
+/* SENSOR DE ULTRASONIDOS */
+/**************************/
+const unsigned int PIN_TRIGGER = 5;
+const unsigned int PIN_ECHO    = 6;
+
+const float VELOCIDAD_SONIDO_CM_S = 34300.0;  // Velocidad del sonido en cm/s
+const float ANCHO_TATAMI          = 30.0;     // tamaño máximo del tatami en cm
+
 
 void Parar(){
   
@@ -84,7 +131,7 @@ void Parar(){
 
 }
 
-void Adelante(){
+void MoverAdelante(){
 
   ahoraMillis = millis();
 
@@ -120,7 +167,7 @@ void GirarIzquierda(){
 
 }
 
-void MarchaAtras(){
+void MoverAtras(){
   
   ahoraMillis = millis();
 
@@ -132,45 +179,146 @@ void MarchaAtras(){
 
 }
 
-void PruebaMotores(){
-
-  Adelante();
-  delay(500);
-
-  GirarDerecha();
-  delay(500);
-  
-  GirarIzquierda();
-  delay(500);
-
-  MarchaAtras();
-  delay(500);
-
-  Parar();
-  delay(500);
-
-}
-
 void Pita( unsigned int vDuracion ){
   tone( PIN_ZUMBADOR, 
         262, 
         vDuracion );
+  noTone( PIN_ZUMBADOR );
   }
 
+void PruebaMotores(){
+
+  for (size_t i = 0; i < 3; i++)
+  {
+    Pita( 500 );
+    delay( 500 );
+  }
+    
+  MoverAdelante();
+  delay( 500 );
+
+  GirarDerecha();
+  delay( 500 );
+  
+  GirarIzquierda();
+  delay( 500 );
+
+  MoverAtras();
+  delay( 500 );
+
+  Parar();
+  delay( 500 );
+
+}
+
+void leerSensoresBordes(){
+
+  // los pines se ponen a LOW cuando detectan el borde negro
+  if ( digitalRead( PIN_IR_TRASERO ) == LOW ){
+    bordeTraseroDetectado = true;
+  }
+  else {
+    bordeTraseroDetectado = false;
+  }
+
+  if ( digitalRead( PIN_IR_DERECHO ) == LOW ){
+    bordeDerechoDetectado = true;
+  }
+  else {
+    bordeDerechoDetectado = false;
+  }
+
+  if ( digitalRead( PIN_IR_IZQUIERDO ) == LOW ){
+    bordeIzquierdoDetectado = true;
+  }
+  else {
+    bordeIzquierdoDetectado = false;
+  }
+
+}
+
+void moverSegunBordeDetectado(){
+
+  if (    bordeDerechoDetectado
+       && bordeIzquierdoDetectado )
+  {
+    
+    MoverAtras();
+
+  } else if ( bordeTraseroDetectado )
+    {
+
+      MoverAdelante();
+
+    } else if ( bordeDerechoDetectado ) 
+      {
+        
+        GirarIzquierda();
+
+      } else if( bordeIzquierdoDetectado ){
+
+                GirarDerecha();
+
+              } else {
+
+                MoverAdelante();              // si no se da ningún caso, nos movemos hacia adelante
+
+              }
+  
+}
+
+float medirDistancia(){
+  // lanzamos la señal desde el trigger
+  digitalWrite( PIN_TRIGGER, LOW );
+  delayMicroseconds(2);
+ 
+  digitalWrite( PIN_TRIGGER, HIGH );
+  delayMicroseconds(10);
+
+  digitalWrite( PIN_TRIGGER, LOW );
+
+  // La función pulseIn obtiene el tiempo que tarda en cambiar entre estados, en este caso a HIGH
+  unsigned long tiempo = pulseIn( PIN_ECHO, HIGH );  
+  // Obtenemos la distancia en cm, hay que convertir el tiempo en segudos ya que está en microsegundos
+  // por eso se multiplica por 0.000001, y se divide entre dos porque la señal va y vuelve
+  float distancia = tiempo * 0.000001 * VELOCIDAD_SONIDO_CM_S / 2.0;
+
+  return distancia;
+}
+
+void buscarEnemigoParaAtacar(){
+
+ while (   medirDistancia() >= 2.0              // si detecta un objeto en este rango, se dirige hacia él
+        && medirDistancia() <= ANCHO_TATAMI ) {
+    MoverAdelante();
+  }
+
+}
 
 void setup() {
   
+  pinMode( PIN_IR_TRASERO   , INPUT );
+  pinMode( PIN_IR_DERECHO   , INPUT );
+  pinMode( PIN_IR_IZQUIERDO , INPUT );
+  pinMode( PIN_TRIGGER      , OUTPUT );
+  pinMode( PIN_ECHO         , INPUT );
+
   servoRuedaDerecha.attach( PIN_RUEDA_DERECHA  );     // vincula el servo de la rueda derecha al pin digital indicado
   servoRuedaIzquierda.attach( PIN_RUEDA_IZQUIERDA );  // vincula el servo de la rueda derecha al pin digital indicado
 
-  PruebaMotores();
+  //PruebaMotores();
   Pita( DURACION_ESTANDAR_PITIDO );
+  MoverAdelante();
+  Parar();
 
 }
 
 void loop() {
 
-  Pita( 100 );
-  delay(1000);
+  leerSensoresBordes();
+
+  moverSegunBordeDetectado();
+
+  buscarEnemigoParaAtacar();
 
 }
