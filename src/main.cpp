@@ -5,13 +5,9 @@
   Basado en el siguiente proyecto de Enrique Crespo:
   https://aprendiendoarduino.wordpress.com/2019/05/06/construccion-y-programacion-de-robot-minisumo
 
-  Basado en info de:
-  https://www.luisllamas.es/controlar-un-servo-de-rotacion-continua-con-arduino/
-
-
-
   Conexionado:
   - Servos de rotación continua FS90R: https://www.addicore.com/FS90R-Servo-p/ad314.htm
+    Basado en info de: https://www.luisllamas.es/controlar-un-servo-de-rotacion-continua-con-arduino/
       With traditional servos you can control which position (angle of revolution) the servo's arm moves to. 
       With the same control signals used to control traditional servos you can control the FS90R servo's shaft 
       to be stationary or rotating either clockwise (CW) or counterclockwise (CCW) and the speed of rotation. 
@@ -38,9 +34,7 @@
       
       Marrón  -> GND
       Rojo    -> V+
-      Naranja -> Señal  -> Patilla 12
-
-      
+      Naranja -> Señal  -> Patilla 12      
       
   - Sensores de infrarrojos para detectar bordes oscuros y no salir del tatami. Cuando detectan un color oscuro, el pin de salida se pone a LOW.
     Basado en información de: https://www.luisllamas.es/arduino-detector-lineas-tcrt5000l/ 
@@ -288,9 +282,12 @@ float medirDistancia(){
 
 void buscarEnemigoParaAtacar(){
 
- while (   medirDistancia() >= 2.0              // si detecta un objeto en este rango, se dirige hacia él
-        && medirDistancia() <= ANCHO_TATAMI ) {
+ while ( medirDistancia() <= ANCHO_TATAMI ) { // si detecta un objeto en este rango, se dirige hacia él
     MoverAdelante();
+    
+    leerSensoresBordes();
+    
+    moverSegunBordeDetectado();
   }
 
 }
