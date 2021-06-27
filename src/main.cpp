@@ -11,7 +11,7 @@
 
 
   Conexionado:
-    Servos de rotación continua FS90R: https://www.addicore.com/FS90R-Servo-p/ad314.htm
+  - Servos de rotación continua FS90R: https://www.addicore.com/FS90R-Servo-p/ad314.htm
       With traditional servos you can control which position (angle of revolution) the servo's arm moves to. 
       With the same control signals used to control traditional servos you can control the FS90R servo's shaft 
       to be stationary or rotating either clockwise (CW) or counterclockwise (CCW) and the speed of rotation. 
@@ -25,21 +25,30 @@
       then slowly turn the middle-point adjustment potentiometer until the servo stops rotating. 
       Access the middle-point adjustment potentiometer by inserting a small screwdriver into the hole in the bottom of the servo, see diagram below.
     
-    Marrón  -> GND
-    Rojo    -> V+
-    Naranja -> Señal
+      Marrón  -> GND
+      Rojo    -> V+
+      Naranja -> Señal
 
-    Rueda derecha   -> Señal a la patilla 9
-    Rueda izquierda -> Señal a la patilla 10 
+      Rueda derecha   -> Señal a la patilla 9
+      Rueda izquierda -> Señal a la patilla 10 
 
+  - Zumbador:
+      Marrón  -> GND
+      Rojo    -> Señal  -> Patilla 12
+      Naranja -> V+
+
+      https://www.arduino.cc/reference/en/language/functions/advanced-io/tone/
+      Funcionamiento del zumbador usando el siguiente programa: https://github.com/jecrespo/Robot-MiniSumo/blob/master/Firmware%20Arduino/Test_Minisumo/Test_Minisumo.ino
+      
 
 */
 
 #include <Arduino.h>
 #include <Servo.h>
 
-
+/**********************/
 /* SERVO Y MOVIMIENTO */
+/**********************/
 Servo servoRuedaDerecha;    // crea el objeto servo para la rueda correspondiente
 Servo servoRuedaIzquierda;  // crea el objeto servo para la rueda correspondiente
 
@@ -54,6 +63,14 @@ const unsigned int RUEDA_IZQUIERDA_ATRAS     = 0;  // parámetro para que la rue
 
 const unsigned long TIEMPO_ACTIVACION        = 100;  // tiempo durante el cual se mantiene activo el movimiento correspondiente
 unsigned long ahoraMillis                    = 0;    // variable usada para contar los millis de duración
+
+
+/************/
+/* ZUMBADOR */
+/************/
+const unsigned int PIN_ZUMBADOR   = 12;
+const unsigned int DURACION_ESTANDAR_PITIDO = 500;
+
 
 void Parar(){
   
@@ -130,9 +147,15 @@ void PruebaMotores(){
   delay(500);
 
   Parar();
-  delay(5000);
+  delay(500);
 
 }
+
+void Pita( unsigned int vDuracion ){
+  tone( PIN_ZUMBADOR, 
+        262, 
+        vDuracion );
+  }
 
 
 void setup() {
@@ -140,29 +163,14 @@ void setup() {
   servoRuedaDerecha.attach( PIN_RUEDA_DERECHA  );     // vincula el servo de la rueda derecha al pin digital indicado
   servoRuedaIzquierda.attach( PIN_RUEDA_IZQUIERDA );  // vincula el servo de la rueda derecha al pin digital indicado
 
-  //PruebaMotores();
+  PruebaMotores();
+  Pita( DURACION_ESTANDAR_PITIDO );
 
 }
 
 void loop() {
 
-  PruebaMotores();
-
-  /*
-  //servo parado (equivalente a angulo 90º)
-  vel = 90;
-  servoRuedaDerecha.write(vel);              
-  delay(1500);    
-
-  //servo 100% CW (equivalente a angulo 180º)
-  vel = 180;
-  servoRuedaDerecha.write(vel);              
-  delay(1500); 
-
-  //servo 100% CCW (equivalente a angulo 0º)
-  vel = 0;
-  servoRuedaDerecha.write(vel);              
-  delay(1500); 
-  */
+  Pita( 100 );
+  delay(1000);
 
 }
