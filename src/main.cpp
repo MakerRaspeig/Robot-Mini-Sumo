@@ -112,7 +112,9 @@ const unsigned int PIN_ECHO    = 6;
 const float VELOCIDAD_SONIDO_CM_S = 34300.0;  // Velocidad del sonido en cm/s
 const float ANCHO_TATAMI          = 30.0;     // tamaño máximo del tatami en cm
 
-
+/*!
+  @brief   Función que para los servos de las ruedas. Lo hace durante el tiempo que se indica en TIEMPO_ACTIVACION
+*/
 void Parar(){
   
   ahoraMillis = millis();
@@ -125,6 +127,9 @@ void Parar(){
 
 }
 
+/*!
+  @brief   Función que activa ambas ruedas para moverse hacia adelante. Lo hace durante el tiempo que se indica en TIEMPO_ACTIVACION
+*/
 void MoverAdelante(){
 
   ahoraMillis = millis();
@@ -137,6 +142,9 @@ void MoverAdelante(){
 
 }
 
+/*!
+  @brief   Función que activa los servos de las ruedas para girar a la derecha. Lo hace durante el tiempo que se indica en TIEMPO_ACTIVACION
+*/
 void GirarDerecha(){
   
   ahoraMillis = millis();
@@ -149,6 +157,9 @@ void GirarDerecha(){
 
 }
 
+/*!
+  @brief   Función que activa los servos de las ruedas para girar a la izquierda. Lo hace durante el tiempo que se indica en TIEMPO_ACTIVACION
+*/
 void GirarIzquierda(){
   
   ahoraMillis = millis();
@@ -161,6 +172,9 @@ void GirarIzquierda(){
 
 }
 
+/*!
+  @brief   Función que activa los servos de las ruedas para desplazarse hacia atrás. Lo hace durante el tiempo que se indica en TIEMPO_ACTIVACION
+*/
 void MoverAtras(){
   
   ahoraMillis = millis();
@@ -173,6 +187,9 @@ void MoverAtras(){
 
 }
 
+/*!
+  @brief   Función que activa el zumbador
+*/
 void Pita( unsigned int vDuracion ){
   tone( PIN_ZUMBADOR, 
         262, 
@@ -180,6 +197,9 @@ void Pita( unsigned int vDuracion ){
   noTone( PIN_ZUMBADOR );
   }
 
+/*!
+  @brief   Función que prueba los motores activándolos de diversos modos
+*/
 void PruebaMotores(){
 
   for (size_t i = 0; i < 3; i++)
@@ -205,7 +225,10 @@ void PruebaMotores(){
 
 }
 
-void leerSensoresBordes(){
+/*!
+  @brief   Función que lee los sensores de los bordes
+*/
+void LeerSensoresBordes(){
 
   // los pines se ponen a LOW cuando detectan el borde negro
   if ( digitalRead( PIN_IR_TRASERO ) == LOW ){
@@ -231,7 +254,10 @@ void leerSensoresBordes(){
 
 }
 
-void moverSegunBordeDetectado(){
+/*!
+  @brief   Función que activa los servos de las ruedas según los detectores que se hayan activado
+*/
+void MoverSegunBordeDetectado(){
 
   if (    bordeDerechoDetectado
        && bordeIzquierdoDetectado )
@@ -261,7 +287,11 @@ void moverSegunBordeDetectado(){
   
 }
 
-float medirDistancia(){
+/*!
+  @brief   Función que mide distancia en cm.
+  @return  Distancia en cm.
+*/    
+float MedirDistancia(){
   // lanzamos la señal desde el trigger
   digitalWrite( PIN_TRIGGER, LOW );
   delayMicroseconds(2);
@@ -280,14 +310,27 @@ float medirDistancia(){
   return distancia;
 }
 
-void buscarEnemigoParaAtacar(){
+/*!
+  @brief   Función que mide la distancia frente al robot con el sensor de ultrasonidos. En caso de que detecte algo dentro del rango del ancho del tatami (ANCHO_TATAMI), se mueve hacia adelante. En caso de que no detecte nada, se mueve a derecha o izquierda de manera aleatoria.
+*/
+void BuscarEnemigoParaAtacar(){
 
- while ( medirDistancia() <= ANCHO_TATAMI ) { // si detecta un objeto en este rango, se dirige hacia él
+ if ( MedirDistancia() <= ANCHO_TATAMI ) { // si detecta un objeto en este rango, se dirige hacia él
+    
     MoverAdelante();
-    
-    leerSensoresBordes();
-    
-    moverSegunBordeDetectado();
+
+  } else {
+
+    if ( ( millis() % 2 ) == 0 ) {
+
+      GirarDerecha();
+
+    } else {
+
+      GirarIzquierda();
+
+    }
+
   }
 
 }
@@ -312,10 +355,10 @@ void setup() {
 
 void loop() {
 
-  leerSensoresBordes();
+  LeerSensoresBordes();
 
-  moverSegunBordeDetectado();
+  MoverSegunBordeDetectado();
 
-  buscarEnemigoParaAtacar();
+  BuscarEnemigoParaAtacar();
 
 }
